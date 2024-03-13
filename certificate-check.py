@@ -16,27 +16,23 @@ EXIT_EXPIRING_SOON = 1
 EXIT_ERROR = 2
 EXIT_NO_HOST_LIST = 9
 
+
 def make_host_port_pair(endpoint):
     host, _, specified_port = endpoint.partition(':')
     port = int(specified_port or DEFAULT_HTTPS_PORT)
 
     return host, port
 
+
 def pluralise(singular, count):
     return '{} {}{}'.format(count, singular, '' if count == 1 else 's')
 
+
 def get_certificate_expiry_date_time(context, host, port):
-    with socket.create_connection((host, port), SOCKET_CONNECTION_TIMEOUT_SECONDS) as tcp_socket:
-        try:
-            with context.wrap_socket(tcp_socket, server_hostname=host) as ssl_socket:
-                certificate_info = ssl_socket.getpeercert()
-                exp_date_text = certificate_info['notAfter']
-                return datetime.datetime.strptime(exp_date_text, r'%b %d %H:%M:%S %Y %Z')
-        except Exception:
-            cert = ssl.get_server_certificate((host, int(port)))
-            x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
-            expiry_date = datetime.datetime.strptime(x509.get_notAfter().decode('utf-8'), '%Y%m%d%H%M%S%z')
-            return datetime.datetime.strptime(expiry_date.strftime('%b %d %H:%M:%S %Y %Z'), r'%b %d %H:%M:%S %Y %Z')
+    cert = ssl.get_server_certificate((host, int(port)))
+    x509 = OpenSSL.crypto.load_certificate(OpenSSL.crypto.FILETYPE_PEM, cert)
+    expiry_date = datetime.datetime.strptime(x509.get_notAfter().decode('utf-8'), '%Y%m%d%H%M%S%z')
+    return datetime.datetime.strptime(expiry_date.strftime('%b %d %H:%M:%S %Y %Z'), r'%b %d %H:%M:%S %Y %Z')
 
 
 def format_time_remaining(time_remaining):
@@ -61,6 +57,7 @@ def format_time_remaining(time_remaining):
             pluralise('min', minutes)
         )
 
+
 def get_exit_code(err_count, min_days):
     code = EXIT_SUCCESS
 
@@ -72,8 +69,10 @@ def get_exit_code(err_count, min_days):
 
     return code
 
+
 def format_host_port(host, port):
     return host + ('' if port == DEFAULT_HTTPS_PORT else ':{}'.format(port))
+
 
 def check_certificates(endpoints):
     context = ssl.create_default_context()
